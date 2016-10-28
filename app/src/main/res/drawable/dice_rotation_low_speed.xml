@@ -1,0 +1,24 @@
+<animation-list xmlns:android="http://schemas.android.com/apk/res/android"
+    android:oneshot="false">
+
+    <item
+        android:drawable="@drawable/dice_0"
+        android:duration="150" />
+
+    <item
+        android:drawable="@drawable/dice_1"
+        android:duration="150" />
+
+    <item
+        android:drawable="@drawable/dice_2"
+        android:duration="150" />
+
+    <item
+        android:drawable="@drawable/dice_3"
+        android:duration="150" />
+
+    <item
+        android:drawable="@drawable/dice_4"
+        android:duration="150" />
+
+</animation-list>

@@ -10,10 +10,15 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.ImageView;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
+
+    private ImageView imvDice;
+    private TextView tvScore;
 
     private SensorManager sensorManager;
     private Sensor mAccelerometer;
@@ -21,11 +26,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private long lastUpdate = 0;
     private int lastSide = 1;
     private float last_x, last_y, last_z;
-    private static final int SHAKE_THRESHOLD = 400;
+    private static final int SHAKE_THRESHOLD = 200;
     private boolean paused = true;
 
     private AnimationDrawable animationDrawable;
-    private ImageView imvDice;
     private int[] dices = new int[]{
             R.drawable.d1,
             R.drawable.d2,
@@ -46,26 +50,29 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         mAccelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 
         imvDice = (ImageView) findViewById(R.id.imvDice);
+        tvScore = (TextView) findViewById(R.id.tvScore);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
 
+        // Register listener for sensorManager
         sensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
     }
 
     @Override
     protected void onPause() {
+        // Unregister listener for sensorManager
         sensorManager.unregisterListener(this);
         super.onPause();
     }
-
 
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
         Sensor sensor = sensorEvent.sensor;
 
+        // Determine sensor and dice's animation is paused
         if (sensor.getType() != Sensor.TYPE_ACCELEROMETER || !paused)
             return;
 
@@ -75,8 +82,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         long curTime = System.currentTimeMillis();
 
-        // Ignore events that have occurred less than 400 ms
-        if (curTime - lastUpdate > 400) {
+        // Ignore events that have occurred less than 200 ms
+        if (curTime - lastUpdate > 200) {
             long diffTime = (curTime - lastUpdate);
             lastUpdate = curTime;
 
@@ -85,7 +92,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
             if (speed > SHAKE_THRESHOLD) {
                 lastSide = getNextDiceSide();
-                rollDice();
+                rollDice(speed);
                 Log.d(TAG, "New side is " + lastSide);
             }
 
@@ -96,13 +103,21 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
     // Roll dice to the last side
-    public void rollDice() {
+    public void rollDice(final float speed) {
 
         // Make animation
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                imvDice.setBackgroundResource(R.drawable.dice_rotation);
+
+                // Set speed for dice
+                if (speed > 800)
+                    imvDice.setBackgroundResource(R.drawable.dice_rotation_fast_speed);
+                else if (speed > 400)
+                    imvDice.setBackgroundResource(R.drawable.dice_rotation_normal_speed);
+                else
+                    imvDice.setBackgroundResource(R.drawable.dice_rotation_low_speed);
+
                 animationDrawable = (AnimationDrawable) imvDice.getBackground();
 
                 // Start animation
@@ -116,9 +131,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     public void run() {
                         animationDrawable.stop();
                         paused = true;
+                        Toast.makeText(getApplicationContext(), "Speed: " + speed, Toast.LENGTH_SHORT).show();
 
                         // Set dice to last side
                         imvDice.setBackgroundResource(dices[lastSide - 1]);
+                        tvScore.setText("Your score: " + lastSide);
                         Log.d(TAG, "Stop rotating");
                     }
                 }, 3000);
@@ -126,15 +143,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         });
     }
 
+    // Get next dice side
     public int getNextDiceSide() {
         Random random = new Random();
-        int num = random.nextInt(5) + 1;
-
-        while (num == lastSide) {
-            num = random.nextInt(5) + 1;
-        }
-
-        return num;
+        return random.nextInt(5) + 1;
     }
 
     @Override
